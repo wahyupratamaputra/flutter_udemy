@@ -35,7 +35,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        theme: ThemeData(primarySwatch: Colors.deepPurple),
+        theme: ThemeData(primarySwatch: Colors.deepPurple, fontFamily: 'Josep'),
         routes: {
           '/': (BuildContext context) => AuthPage(),
           '/products': (BuildContext context) => ProductsPage(_products),
