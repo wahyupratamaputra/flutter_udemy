@@ -1,5 +1,4 @@
 import 'package:first_app/pages/product.dart';
-import 'package:first_app/product_manager.dart';
 import 'package:flutter/material.dart';
 import './pages/auth.dart';
 import './pages/product_admin.dart';
@@ -53,6 +52,8 @@ class _MyAppState extends State<MyApp> {
               builder: (BuildContext context) => ProductPage(
                     _products[index]['title'],
                     _products[index]['image'],
+                    _products[index]['price'],
+                    _products[index]['description'],
                   ),
             );
           }
