@@ -18,10 +18,15 @@ class _ProductCreatePageState extends State<ProductCreatePage> {
 
   Widget _buildTitleTextField() {
     return TextFormField(
+      validator: (String value) {
+        if (value.isEmpty) {
+          return 'Title is required';
+        }
+      },
       decoration: InputDecoration(labelText: 'Product Title'),
-       onSaved: (String value){
+      onSaved: (String value) {
         setState(() {
-         _titlevalue = value; 
+          _titlevalue = value;
         });
       },
     );
@@ -30,10 +35,15 @@ class _ProductCreatePageState extends State<ProductCreatePage> {
   Widget _buildDescriptionTextField() {
     return TextFormField(
       maxLines: 4,
+      validator: (String value) {
+        if (value.isEmpty) {
+          return 'Title is required';
+        }
+      },
       decoration: InputDecoration(labelText: 'Product Description'),
-      onSaved: (String value){
+      onSaved: (String value) {
         setState(() {
-         _description = value; 
+          _description = value;
         });
       },
     );
@@ -43,9 +53,9 @@ class _ProductCreatePageState extends State<ProductCreatePage> {
     return TextFormField(
       decoration: InputDecoration(labelText: 'Product Price'),
       keyboardType: TextInputType.number,
-       onSaved: (String value){
+      onSaved: (String value) {
         setState(() {
-         _pricevalue = double.parse(value); 
+          _pricevalue = double.parse(value);
         });
       },
     );
@@ -53,6 +63,10 @@ class _ProductCreatePageState extends State<ProductCreatePage> {
 
   void _submitForm() {
     _formKey.currentState.save();
+    if(!_formKey.currentState.validate()){
+      return;
+    }
+    
     final Map<String, dynamic> product = {
       'title': _titlevalue,
       'description': _description,
@@ -88,13 +102,11 @@ class _ProductCreatePageState extends State<ProductCreatePage> {
             //     color: Theme.of(context).accentColor,
             //     textColor: Colors.white,
             //     onPressed: _submitForm)
-            GestureDetector(
-              onTap: _submitForm,
-              child: Container(
-                color: Colors.green,
-                padding: EdgeInsets.all(10),
-                child: Text('awwwww'),
-              ),
+            RaisedButton(
+              color: Colors.green,
+              child: Text('Save'),
+              textColor: Colors.white,
+              onPressed: _submitForm,
             ),
           ],
         ),
