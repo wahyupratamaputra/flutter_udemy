@@ -11,9 +11,12 @@ class ProductCreatePage extends StatefulWidget {
 }
 
 class _ProductCreatePageState extends State<ProductCreatePage> {
-  String _titlevalue;
-  String _description;
-  double _pricevalue;
+  final Map<String, dynamic> _formData = {
+    'title': null,
+    'description': null,
+    'price': null,
+    'image': 'assets/food.jpg'
+  };
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   Widget _buildTitleTextField() {
@@ -25,9 +28,7 @@ class _ProductCreatePageState extends State<ProductCreatePage> {
       },
       decoration: InputDecoration(labelText: 'Product Title'),
       onSaved: (String value) {
-        setState(() {
-          _titlevalue = value;
-        });
+        _formData['title'] = value;
       },
     );
   }
@@ -42,9 +43,7 @@ class _ProductCreatePageState extends State<ProductCreatePage> {
       },
       decoration: InputDecoration(labelText: 'Product Description'),
       onSaved: (String value) {
-        setState(() {
-          _description = value;
-        });
+        _formData['description'] = value;
       },
     );
   }
@@ -54,26 +53,17 @@ class _ProductCreatePageState extends State<ProductCreatePage> {
       decoration: InputDecoration(labelText: 'Product Price'),
       keyboardType: TextInputType.number,
       onSaved: (String value) {
-        setState(() {
-          _pricevalue = double.parse(value);
-        });
+        _formData['price'] = double.parse(value);
       },
     );
   }
 
   void _submitForm() {
     _formKey.currentState.save();
-    if(!_formKey.currentState.validate()){
+    if (!_formKey.currentState.validate()) {
       return;
     }
-    
-    final Map<String, dynamic> product = {
-      'title': _titlevalue,
-      'description': _description,
-      'price': _pricevalue,
-      'image': 'assets/food.jpg'
-    };
-    widget.addProduct(product);
+    widget.addProduct(_formData);
     Navigator.pushReplacementNamed(context, '/products');
   }
 
@@ -84,31 +74,36 @@ class _ProductCreatePageState extends State<ProductCreatePage> {
         deviceWidth > 600 ? 500 : MediaQuery.of(context).size.width * 0.95;
     final double targetPadding = deviceWidth - targetWidth;
 
-    return Container(
-      margin: EdgeInsets.all(10),
-      child: Form(
-        key: _formKey,
-        child: ListView(
-          padding: EdgeInsets.symmetric(horizontal: targetPadding / 2),
-          children: <Widget>[
-            _buildTitleTextField(),
-            _buildDescriptionTextField(),
-            _buildPriceTextField(),
-            SizedBox(
-              height: 20,
-            ),
-            // RaisedButton(
-            //     child: Text('Add'),
-            //     color: Theme.of(context).accentColor,
-            //     textColor: Colors.white,
-            //     onPressed: _submitForm)
-            RaisedButton(
-              color: Colors.green,
-              child: Text('Save'),
-              textColor: Colors.white,
-              onPressed: _submitForm,
-            ),
-          ],
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).requestFocus(FocusNode());
+      },
+      child: Container(
+        margin: EdgeInsets.all(10),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: EdgeInsets.symmetric(horizontal: targetPadding / 2),
+            children: <Widget>[
+              _buildTitleTextField(),
+              _buildDescriptionTextField(),
+              _buildPriceTextField(),
+              SizedBox(
+                height: 20,
+              ),
+              // RaisedButton(
+              //     child: Text('Add'),
+              //     color: Theme.of(context).accentColor,
+              //     textColor: Colors.white,
+              //     onPressed: _submitForm)
+              RaisedButton(
+                color: Colors.green,
+                child: Text('Save'),
+                textColor: Colors.white,
+                onPressed: _submitForm,
+              ),
+            ],
+          ),
         ),
       ),
     );
