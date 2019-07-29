@@ -1,11 +1,10 @@
 import 'package:first_app/pages/product.dart';
-import 'package:first_app/scoped-models/products.dart';
+import 'package:first_app/scoped-models/main.dart';
 import 'package:flutter/material.dart';
 import './pages/auth.dart';
 import './pages/product_admin.dart';
 import './pages/products.dart';
 import './pages/product.dart';
-import './scoped-models/products.dart';
 import 'package:scoped_model/scoped_model.dart';
 
 void main() {
@@ -22,14 +21,15 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
-    return ScopedModel<ProductsModel>(
-      model: ProductsModel(),
+    final MainModel model = MainModel();
+    return ScopedModel<MainModel>(
+      model: model,
       child: MaterialApp(
           theme:
               ThemeData(primarySwatch: Colors.deepPurple, fontFamily: 'Josep'),
           routes: {
             '/': (BuildContext context) => AuthPage(),
-            '/products': (BuildContext context) => ProductsPage(),
+            '/products': (BuildContext context) => ProductsPage(model),
             '/admin': (BuildContext context) => ProductAdminPage(),
           },
           onGenerateRoute: (RouteSettings settings) {
@@ -49,7 +49,7 @@ class _MyAppState extends State<MyApp> {
           },
           onUnknownRoute: (RouteSettings settings) {
             return MaterialPageRoute(
-              builder: (BuildContext context) => ProductsPage(),
+              builder: (BuildContext context) => ProductsPage(model),
             );
           }),
     );

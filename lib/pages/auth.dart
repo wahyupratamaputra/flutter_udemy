@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:scoped_model/scoped_model.dart';
+import '../scoped-models/main.dart';
 
 class AuthPage extends StatefulWidget {
   @override
@@ -9,12 +11,12 @@ class AuthPage extends StatefulWidget {
 
 class _AuthPageState extends State<AuthPage> {
   final Map<String, dynamic> _formData = {
-    'email':null,
-    'password':null,
+    'email': null,
+    'password': null,
     'acceptTerms': false,
   };
   bool _acceptTerms = false;
-  final GlobalKey<FormState>_formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   DecorationImage _buildBackgroundImage() {
     return DecorationImage(
@@ -31,8 +33,10 @@ class _AuthPageState extends State<AuthPage> {
           filled: true,
           fillColor: Colors.white.withOpacity(0.2)),
       keyboardType: TextInputType.emailAddress,
-      validator: (String value){
-        if(value.isEmpty || !RegExp(r"[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?").hasMatch(value)){
+      validator: (String value) {
+        if (value.isEmpty ||
+            !RegExp(r"[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?")
+                .hasMatch(value)) {
           return 'Please enter email valid';
         }
       },
@@ -49,8 +53,8 @@ class _AuthPageState extends State<AuthPage> {
           filled: true,
           fillColor: Colors.white.withOpacity(0.2)),
       obscureText: true,
-      validator: (String value){
-        if(value.isEmpty || value.length < 6){
+      validator: (String value) {
+        if (value.isEmpty || value.length < 6) {
           return 'Password must valid';
         }
       },
@@ -72,12 +76,16 @@ class _AuthPageState extends State<AuthPage> {
     );
   }
 
-  void _submitForm() {
+  void _submitForm(Function login) {
     print(_formData);
-    if(!_formKey.currentState.validate() || !_formData['acceptTerms']){
+    if (!_formKey.currentState.validate() || !_formData['acceptTerms']) {
       return;
     }
     _formKey.currentState.save();
+    login(
+      _formData['email'],
+      _formData['password'],
+    );
     Navigator.pushReplacementNamed(context, '/products');
   }
 
@@ -113,12 +121,17 @@ class _AuthPageState extends State<AuthPage> {
                       SizedBox(
                         height: 20,
                       ),
-                      RaisedButton(
-                        color: Theme.of(context).primaryColor,
-                        textColor: Colors.white,
-                        child: Text('LOGIN'),
-                        onPressed: _submitForm,
-                      ),
+                      ScopedModelDescendant<MainModel>(
+                        builder: (BuildContext context, Widget child,
+                            MainModel model) {
+                          return RaisedButton(
+                            color: Theme.of(context).primaryColor,
+                            textColor: Colors.white,
+                            child: Text('LOGIN'),
+                            onPressed: () => _submitForm(model.login),
+                          );
+                        },
+                      )
                     ],
                   ),
                 )),
