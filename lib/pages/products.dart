@@ -3,7 +3,7 @@ import '../widgets/products/products.dart';
 import '../scoped-models/main.dart';
 import 'package:scoped_model/scoped_model.dart';
 
-class ProductsPage extends StatefulWidget{
+class ProductsPage extends StatefulWidget {
   final MainModel model;
 
   ProductsPage(this.model);
@@ -14,9 +14,9 @@ class ProductsPage extends StatefulWidget{
   }
 }
 
-class _ProductsPageState extends State<ProductsPage>{
+class _ProductsPageState extends State<ProductsPage> {
   @override
-  initState(){
+  initState() {
     widget.model.fetchProducts();
     super.initState();
   }
@@ -38,6 +38,27 @@ class _ProductsPageState extends State<ProductsPage>{
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildProductsList() {
+    return ScopedModelDescendant(
+      builder: (BuildContext context, Widget child, MainModel model) {
+        Widget content = Center(
+          child: Text('No Product Found'),
+        );
+        if (model.displayedProducts.length > 0 && !model.isLoading) {
+          content = Products();
+        } else if (model.isLoading) {
+          content = Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+        return RefreshIndicator(
+          child: content,
+          onRefresh: model.fetchProducts,
+        );
+      },
     );
   }
 
@@ -63,7 +84,7 @@ class _ProductsPageState extends State<ProductsPage>{
           )
         ],
       ),
-      body: Products(),
+      body: _buildProductsList(),
     );
   }
 }

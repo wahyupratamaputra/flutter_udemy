@@ -1,5 +1,6 @@
 import 'package:scoped_model/scoped_model.dart';
 import 'dart:convert';
+import 'dart:async';
 import '../models/product.dart';
 import '../models/user.dart';
 import 'package:http/http.dart' as http;
@@ -7,21 +8,69 @@ import 'package:http/http.dart' as http;
 mixin ConnectedProductsModel on Model {
   List<Product> _products = [];
   User _authenticatedUser;
-  int _selProductIndex;
+  String _selProductId;
+  bool _isLoading = false;
+}
 
-  void addProduct(
-      String title, String description, String image, double price) {
+mixin ProductsModel on ConnectedProductsModel {
+  bool _showFavorite = false;
+
+  List<Product> get allProducts {
+    return List.from(_products);
+  }
+
+  int get selectedProductIndex {
+    return _products.indexWhere((Product product) {
+      return product.id == _selProductId;
+    });
+  }
+
+  List<Product> get displayedProducts {
+    if (_showFavorite == true) {
+      return _products.where((Product product) => product.isFavorite).toList();
+    }
+    return List.from(_products);
+  }
+
+  String get selectedProductid {
+    return _selProductId;
+  }
+
+  Product get selectedProduct {
+    if (selectedProductid == null) {
+      return null;
+    }
+    return _products.firstWhere((Product product) {
+      return product.id == _selProductId;
+    });
+  }
+
+  bool get displayFavoriteOnly {
+    return _showFavorite;
+  }
+
+  Future<bool> addProduct(
+      String title, String description, String image, double price) async {
+    _isLoading = true;
+    notifyListeners();
     final Map<String, dynamic> productData = {
       'title': title,
       'description': description,
       'image':
           'https://proxy.duckduckgo.com/iu/?u=https%3A%2F%2Fassets.goodhousekeeping.co.uk%2Fmain%2Fembedded%2F26896%2Fcooking-chocolate-taste-test-good-housekeeping.jpg&f=1',
       'price': price,
+      'userEmail': _authenticatedUser.email,
+      'userId': _authenticatedUser.id,
     };
-    http
+    try {
+      final http.Response response = await http
         .post('https://flutterudemy-161d4.firebaseio.com/products.json',
-            body: json.encode(productData))
-        .then((http.Response response) {
+            body: json.encode(productData));
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
       final Map<String, dynamic> responseData = json.decode(response.body);
       final Product newProduct = Product(
           id: responseData['name'],
@@ -32,76 +81,113 @@ mixin ConnectedProductsModel on Model {
           userEmail: _authenticatedUser.email,
           userId: _authenticatedUser.id);
       _products.add(newProduct);
-      _selProductIndex = null;
+      _selProductId = null;
+      _isLoading = false;
       notifyListeners();
+      return true;
+    } catch (error) {
+       _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateProduct(
+      String title, String description, String image, double price) {
+    _isLoading = false;
+    notifyListeners();
+    final Map<String, dynamic> updatedData = {
+      'title': title,
+      'description': description,
+      'image':
+          'https://proxy.duckduckgo.com/iu/?u=https%3A%2F%2Fassets.goodhousekeeping.co.uk%2Fmain%2Fembedded%2F26896%2Fcooking-chocolate-taste-test-good-housekeeping.jpg&f=1',
+      'price': price,
+      'userEmail': selectedProduct.userEmail,
+      'userId': selectedProduct.userId,
+    };
+    return http
+        .put(
+            'https://flutterudemy-161d4.firebaseio.com/products/${selectedProduct.id}.json',
+            body: json.encode(updatedData))
+        .then((http.Response response) {
+      _isLoading = false;
+      final Product updatedProduct = Product(
+          id: selectedProduct.id,
+          title: title,
+          description: description,
+          image: image,
+          price: price,
+          userEmail: selectedProduct.userEmail,
+          userId: selectedProduct.userId);
+      _products[selectedProductIndex] = updatedProduct;
+      notifyListeners();
+      return true;
+    }).catchError((error) {
+      _isLoading = false;
+      notifyListeners();
+      return false;
     });
   }
-}
 
-mixin ProductsModel on ConnectedProductsModel {
-  bool _showFavorite = false;
-
-  List<Product> get allProducts {
-    return List.from(_products);
-  }
-
-  List<Product> get displayedProducts {
-    if (_showFavorite == true) {
-      return _products.where((Product product) => product.isFavorite).toList();
-    }
-    return List.from(_products);
-  }
-
-  int get selectedProductIndex {
-    return _selProductIndex;
-  }
-
-  Product get selectedProduct {
-    if (selectedProductIndex == null) {
-      return null;
-    }
-    return _products[selectedProductIndex];
-  }
-
-  bool get displayFavoriteOnly {
-    return _showFavorite;
-  }
-
-  void updateProduct(
-      String title, String description, String image, double price) {
-    final Product updatedProduct = Product(
-        title: title,
-        description: description,
-        image: image,
-        price: price,
-        userEmail: selectedProduct.userEmail,
-        userId: selectedProduct.userId);
-    _products[selectedProductIndex] = updatedProduct;
-  }
-
-  void deleteProduct() {
+  Future<bool> deleteProduct() {
+    _isLoading = true;
+    final deletedProductId = selectedProduct.id;
     _products.removeAt(selectedProductIndex);
-  }
-
-  void fetchProducts() {
+    _selProductId = null;
+    notifyListeners();
     http
-        .get('https://flutterudemy-161d4.firebaseio.com/products.json')
-        .then((http.Response response){
-          print(json.decode(response.body));  
-        });
+        .delete(
+            'https://flutterudemy-161d4.firebaseio.com/products/${deletedProductId}.json')
+        .then((http.Response response) {
+      _isLoading = false;
+      return true;
+    }).catchError((error) {
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    });
   }
 
-  void selectProduct(int index) {
-    _selProductIndex = index;
-    if (index != null) {
+  Future<Null> fetchProducts() {
+    _isLoading = true;
+    notifyListeners();
+    return http
+        .get('https://flutterudemy-161d4.firebaseio.com/products.json')
+        .then((http.Response response) {
+      final List<Product> fetchedProductList = [];
+      final Map<String, dynamic> productListData = json.decode(response.body);
+      if (productListData == null) {
+        _isLoading = false;
+        notifyListeners();
+      }
+      productListData.forEach((String productId, dynamic productData) {
+        final Product product = Product(
+            id: productId,
+            title: productData['title'],
+            description: productData['description'],
+            image: productData['image'],
+            price: productData['price'],
+            userEmail: productData['userEmail'],
+            userId: productData['userId']);
+        fetchedProductList.add(product);
+      });
+      _products = fetchedProductList;
+      _isLoading = false;
       notifyListeners();
-    }
+      _selProductId = null;
+    });
+  }
+
+  void selectProduct(String productId) {
+    _selProductId = productId;
+    notifyListeners();
   }
 
   void toggleProductFavoriteStatus() {
     final bool isCurrentlyFavorite = _products[selectedProductIndex].isFavorite;
     final bool newFavoriteStatus = !isCurrentlyFavorite;
     final Product updatedProduct = Product(
+      id: selectedProduct.id,
       title: selectedProduct.title,
       description: selectedProduct.description,
       price: selectedProduct.price,
@@ -123,5 +209,11 @@ mixin ProductsModel on ConnectedProductsModel {
 mixin UserModel on ConnectedProductsModel {
   void login(String email, String password) {
     _authenticatedUser = User(id: 'sadasd', email: email, password: password);
+  }
+}
+
+mixin UtilityModel on ConnectedProductsModel {
+  bool get isLoading {
+    return _isLoading;
   }
 }

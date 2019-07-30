@@ -26,31 +26,29 @@ class ProductCard extends StatelessWidget {
   }
 
   Widget _buildActionButton(BuildContext context) {
-    return ButtonBar(
-      alignment: MainAxisAlignment.center,
-      children: <Widget>[
+    return ScopedModelDescendant<MainModel>(
+        builder: (BuildContext context, Widget child, MainModel model) {
+      return ButtonBar(alignment: MainAxisAlignment.center, children: <Widget>[
         IconButton(
           icon: Icon(Icons.info),
           color: Theme.of(context).accentColor,
           onPressed: () => Navigator.pushNamed<bool>(
             context,
-            '/product/' + productIndex.toString(),
+            '/product/' + model.allProducts[productIndex].id,
           ),
         ),
-        ScopedModelDescendant<MainModel>(
-          builder: (BuildContext context, Widget child, MainModel model) {
-            return IconButton(
-              icon: Icon(model.allProducts[productIndex].isFavorite ? Icons.favorite : Icons.favorite_border),
-              color: Colors.redAccent,
-              onPressed: (){
-                model.selectProduct(productIndex);
-                model.toggleProductFavoriteStatus();
-              },
-            );
+        IconButton(
+          icon: Icon(model.allProducts[productIndex].isFavorite
+              ? Icons.favorite
+              : Icons.favorite_border),
+          color: Colors.redAccent,
+          onPressed: () {
+            model.selectProduct(model.allProducts[productIndex].id);
+            model.toggleProductFavoriteStatus();
           },
         )
-      ],
-    );
+      ]);
+    });
   }
 
   @override
@@ -59,7 +57,10 @@ class ProductCard extends StatelessWidget {
     return Card(
       child: Column(
         children: <Widget>[
-          Image.asset(product.image),
+          FadeInImage(
+            image: NetworkImage(product.image),
+            placeholder: AssetImage('assets/loading.gif'),
+          ),
           SizedBox(
             height: 20,
           ),
