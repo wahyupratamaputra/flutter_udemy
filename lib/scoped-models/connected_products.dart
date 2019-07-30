@@ -63,9 +63,9 @@ mixin ProductsModel on ConnectedProductsModel {
       'userId': _authenticatedUser.id,
     };
     try {
-      final http.Response response = await http
-        .post('https://flutterudemy-161d4.firebaseio.com/products.json',
-            body: json.encode(productData));
+      final http.Response response = await http.post(
+          'https://flutterudemy-161d4.firebaseio.com/products.json',
+          body: json.encode(productData));
       if (response.statusCode != 200 && response.statusCode != 201) {
         _isLoading = false;
         notifyListeners();
@@ -86,7 +86,7 @@ mixin ProductsModel on ConnectedProductsModel {
       notifyListeners();
       return true;
     } catch (error) {
-       _isLoading = false;
+      _isLoading = false;
       notifyListeners();
       return false;
     }
@@ -209,6 +209,20 @@ mixin ProductsModel on ConnectedProductsModel {
 mixin UserModel on ConnectedProductsModel {
   void login(String email, String password) {
     _authenticatedUser = User(id: 'sadasd', email: email, password: password);
+  }
+
+  Future<Map<String, dynamic>> signup(String email, String password) async {
+    final Map<String, dynamic> authData = {
+      'email': email,
+      'password': password,
+      'returnSecureToken': true
+    };
+    final http.Response response = await http.post(
+        'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyDZeMgI0fQXwGcaXMGACzV_hNeLHibxhM0',
+        body: json.encode(authData),
+        headers: {'Content-Type': 'application/json'});
+    print(json.decode(response.body));
+    return {'success': true, 'message': 'Authentication Success'};
   }
 }
 
