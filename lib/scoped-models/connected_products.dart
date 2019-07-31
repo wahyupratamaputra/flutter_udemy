@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:async';
 import '../models/product.dart';
 import '../models/user.dart';
+import '../models/auth.dart';
 import 'package:http/http.dart' as http;
 
 mixin ConnectedProductsModel on Model {
@@ -64,7 +65,7 @@ mixin ProductsModel on ConnectedProductsModel {
     };
     try {
       final http.Response response = await http.post(
-          'https://flutterudemy-161d4.firebaseio.com/products.json',
+          'https://flutterudemy-161d4.firebaseio.com/products.json?auth=${_authenticatedUser.token}',
           body: json.encode(productData));
       if (response.statusCode != 200 && response.statusCode != 201) {
         _isLoading = false;
@@ -107,7 +108,7 @@ mixin ProductsModel on ConnectedProductsModel {
     };
     return http
         .put(
-            'https://flutterudemy-161d4.firebaseio.com/products/${selectedProduct.id}.json',
+            'https://flutterudemy-161d4.firebaseio.com/products/${selectedProduct.id}.json?auth=${_authenticatedUser.token}',
             body: json.encode(updatedData))
         .then((http.Response response) {
       _isLoading = false;
@@ -137,7 +138,7 @@ mixin ProductsModel on ConnectedProductsModel {
     notifyListeners();
     http
         .delete(
-            'https://flutterudemy-161d4.firebaseio.com/products/${deletedProductId}.json')
+            'https://flutterudemy-161d4.firebaseio.com/products/${deletedProductId}.json?auth=${_authenticatedUser.token}')
         .then((http.Response response) {
       _isLoading = false;
       return true;
@@ -152,7 +153,7 @@ mixin ProductsModel on ConnectedProductsModel {
     _isLoading = true;
     notifyListeners();
     return http
-        .get('https://flutterudemy-161d4.firebaseio.com/products.json')
+        .get('https://flutterudemy-161d4.firebaseio.com/products.json?auth=${_authenticatedUser.token}')
         .then((http.Response response) {
       final List<Product> fetchedProductList = [];
       final Map<String, dynamic> productListData = json.decode(response.body);
@@ -207,22 +208,49 @@ mixin ProductsModel on ConnectedProductsModel {
 }
 
 mixin UserModel on ConnectedProductsModel {
-  void login(String email, String password) {
-    _authenticatedUser = User(id: 'sadasd', email: email, password: password);
-  }
-
-  Future<Map<String, dynamic>> signup(String email, String password) async {
+  Future<Map<String, dynamic>> authenticate(String email, String password,
+      [AuthMode mode = AuthMode.Login]) async {
+    _isLoading = true;
+    notifyListeners();
     final Map<String, dynamic> authData = {
       'email': email,
       'password': password,
       'returnSecureToken': true
     };
-    final http.Response response = await http.post(
-        'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyDZeMgI0fQXwGcaXMGACzV_hNeLHibxhM0',
-        body: json.encode(authData),
-        headers: {'Content-Type': 'application/json'});
-    print(json.decode(response.body));
-    return {'success': true, 'message': 'Authentication Success'};
+    http.Response response;
+    if (mode == AuthMode.Login) {
+      response = await http.post(
+          'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyDZeMgI0fQXwGcaXMGACzV_hNeLHibxhM0',
+          body: json.encode(authData),
+          headers: {'Content-Type': 'application/json'});
+    } else {
+      response = await http.post(
+          'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyDZeMgI0fQXwGcaXMGACzV_hNeLHibxhM0',
+          body: json.encode(authData),
+          headers: {'Content-Type': 'application/json'});
+    }
+
+    final Map<String, dynamic> responseData = json.decode(response.body);
+    bool hasError = true;
+    String message = 'Something went wrong';
+    print(responseData);
+    if (responseData.containsKey('idToken')) {
+      hasError = false;
+      message = 'Authentication Success';
+      _authenticatedUser = User(
+          id: responseData['localId'],
+          email: email,
+          token: responseData['idToken']);
+    } else if (responseData['error']['message'] == 'EMAIL_NOT_FOUND') {
+      message = 'This email not found';
+    } else if (responseData['error']['message'] == 'INVALID_PASSWORD') {
+      message = 'The password is invalid';
+    } else if (responseData['error']['message'] == 'EMAIL_EXISTS') {
+      message = 'This email already exist';
+    }
+    _isLoading = false;
+    notifyListeners();
+    return {'success': !hasError, 'message': message};
   }
 }
 
